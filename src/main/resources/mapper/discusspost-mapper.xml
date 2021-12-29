@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.an.forum.dao.DiscussPostMapper">
+
+    <sql id="selectFields">
+        id, user_id, title, content, type, status, create_time, comment_count, score
+    </sql>
+
+    <sql id="insertFields">
+        user_id, title, content, type, status, create_time, comment_count, score
+    </sql>
+
+    <!--selectDiscussPosts方法的返回值是List<DiscussPost>，其中List是Java自身有的类型，
+    可以自动识别，只需要在resultType中声明自定义的类型DiscussPost-->
+    <select id="selectDiscussPosts" resultType="DiscussPost">
+        select <include refid="selectFields"></include>
+        from discuss_post
+        where status != 2   /*过滤掉被拉黑的帖子*/
+        <if test="userId != 0">
+            /*此时表明是筛选某一用户的所有帖子*/
+            and user_id = #{userId}
+        </if>
+        /*按照帖子类型（置顶、加精、普通）以及创建时间排序*/
+        order by type desc, create_time desc
+        /*分页*/
+        limit #{offset}, #{limit}
+    </select>
+
+    <select id="selectDiscussPostRows" resultType="int">
+        select count(id)
+        from discuss_post
+        where status != 2   /*过滤掉被拉黑的帖子*/
+        <if test="userId != 0">
+            /*此时表明是筛选某一用户的所有帖子*/
+            and user_id = #{userId}
+        </if>
+    </select>
+
+    <insert id="insertDiscussPost" parameterType="DiscussPost" keyProperty="id">
+        insert into discuss_post(<include refid="insertFields"></include>)
+        values(#{userId},#{title},#{content},#{type},#{status},#{createTime},#{commentCount},#{score})
+    </insert>
+
+    <select id="selectDiscussPostById" resultType="DiscussPost">
+        select <include refid="selectFields"></include>
+        from discuss_post
+        where id = #{id} and status != 2
+    </select>
+
+    <update id="updateCommentCount">
+        update discuss_post set comment_count = #{commentCount} where id = #{id}
+    </update>
+
+</mapper>
